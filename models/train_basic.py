@@ -48,6 +48,7 @@ class CIFAR10Model(nn.Module):
         return X
 
 clf = CIFAR10Model()
+clf.cuda()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(clf.parameters())
 
@@ -79,7 +80,6 @@ def train():
             f'Finished epoch {epoch}. '
             f'avg loss: {np.mean(losses)}; median loss: {np.min(losses)}'
         )
-
 
 if __name__ == "__main__":
     train()
