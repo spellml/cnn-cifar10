@@ -47,6 +47,7 @@ class CIFAR10Model(nn.Module):
         X = self.head(X)
         return X
 
+clf = CIFAR10Model()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(clf.parameters())
 
