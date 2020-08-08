@@ -106,10 +106,13 @@ clf = CIFAR10Model()
 
 if args.from_checkpoint:
     if args.from_checkpoint == "latest":
-        epoch = max([int(re.findall("[0-9]{1,2}", fp)[0]) for fp in os.listdir("/mnt/checkpoints/")])
+        start_epoch = max([int(re.findall("[0-9]{1,2}", fp)[0]) for fp in os.listdir("/mnt/checkpoints/")])
     else:
-        epoch = args.from_checkpoint
-    clf.load_state_dict(torch.load(f"/mnt/checkpoints/epoch_{epoch}.pth"))
+        start_epoch = args.from_checkpoint
+    clf.load_state_dict(torch.load(f"/mnt/checkpoints/epoch_{start_epoch}.pth"))
+    print(f"Resuming training from epoch {start_epoch}...")
+else:
+    start_epoch = 1
 
 clf.cuda()
 criterion = nn.CrossEntropyLoss()
@@ -145,7 +148,7 @@ def train():
     clf.train()
     NUM_EPOCHS = args.epochs
     
-    for epoch in range(1, NUM_EPOCHS + 1):
+    for epoch in range(start_epoch, NUM_EPOCHS + 1):
         losses = []
 
         for i, (X_batch, y_cls) in enumerate(train_dataloader):
@@ -176,7 +179,7 @@ def train():
         if epoch % 5 == 0:
             torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{epoch}.pth")
     
-    torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{NUM_EPOCHS + 1}.pth")
+    torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{NUM_EPOCHS}.pth")
 
 if __name__ == "__main__":
     train()
