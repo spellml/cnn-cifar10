@@ -7,6 +7,9 @@ import numpy as np
 import argparse
 from spell.metrics import send_metric
 
+import os
+if not os.path.exists("/spell/checkpoints/"):
+    os.mkdir("/spell/checkpoints/")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, dest='epochs', default=50)
@@ -99,8 +102,9 @@ def train():
             f'Finished epoch {epoch}. '
             f'avg loss: {np.mean(losses)}; median loss: {np.min(losses)}'
         )
+        if epoch % 5 == 0:
+            torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{epoch}.pth")
+    torch.save(clf.state_dict(), f"/spell/checkpoints/model_final.pth")
 
-# if __name__ == "__main__":
-#     train()
-
-train()
+if __name__ == "__main__":
+    train()
