@@ -109,7 +109,7 @@ if args.from_checkpoint:
         epoch = max([int(re.findall("[0-9]{1,2}", fp)[0]) for fp in os.listdir("/mnt/checkpoints/")])
     else:
         epoch = args.from_checkpoint
-    model.load_state_dict(torch.load(f"/mnt/checkpoints/epoch_{epoch}.pth"))
+    clf.load_state_dict(torch.load(f"/mnt/checkpoints/epoch_{epoch}.pth"))
 
 clf.cuda()
 criterion = nn.CrossEntropyLoss()
