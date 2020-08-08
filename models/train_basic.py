@@ -7,8 +7,8 @@ import numpy as np
 from spell.metrics import send_metric
 
 import os
-if not os.path.exists("/spell/cnn-cifar10/checkpoints/"):
-    os.mkdir("/spell/cnn-cifar10/checkpoints/")
+if not os.path.exists("/spell/checkpoints/"):
+    os.mkdir("/spell/checkpoints/")
 
 transform = torchvision.transforms.Compose([
     torchvision.transforms.RandomHorizontalFlip(),
@@ -87,8 +87,8 @@ def train():
             f'avg loss: {np.mean(losses)}; median loss: {np.min(losses)}'
         )
         
-        torch.save(clf.state_dict(), f"/spell/cnn-cifar10/checkpoints/epoch_{epoch}.pth")
-    torch.save(clf.state_dict(), f"/spell/cnn-cifar10/checkpoints/model_final.pth")
+        torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{epoch}.pth")
+    torch.save(clf.state_dict(), f"/spell/checkpoints/model_final.pth")
 
 if __name__ == "__main__":
     train()
