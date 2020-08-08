@@ -26,6 +26,8 @@ parser.add_argument('--conv1_dropout', type=float, dest='conv1_dropout', default
 parser.add_argument('--conv2_dropout', type=float, dest='conv2_dropout', default=0.25)
 parser.add_argument('--dense_dropout', type=float, dest='dense_dropout', default=0.5)
 
+parser.add_argument('--from_checkpoint', type=str, dest='from_checkpoint', default="")
+
 args = parser.parse_args()
 
 # Used for testing purposes.
@@ -39,6 +41,7 @@ args = parser.parse_args()
 #         self.conv1_dropout = 0.25
 #         self.conv2_dropout = 0.25
 #         self.dense_dropout = 0.5
+#         self.from_checkpoint = False
 # args = Args()
 
 transform_train = torchvision.transforms.Compose([
@@ -52,11 +55,17 @@ transform_test = torchvision.transforms.Compose([
     torchvision.transforms.ToTensor(),
     torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),    
 ])
-train_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=True, transform=transform_train, download=True)
-train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False)
-test_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=False, transform=transform_test, download=True)
-test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
+download = os.path.exists("/mnt/cifar10/")
+if download:
+    print("CIFAR10 dataset not on disk, downloading...")
+else:
+    print("CIFAR10 dataset is already on disk! Skipping download.")
+
+train_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=True, transform=transform_train, download=download)
+train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False)
+test_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=False, transform=transform_test, download=download)
+test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
 class CIFAR10Model(nn.Module):
     def __init__(self):
@@ -93,6 +102,14 @@ class CIFAR10Model(nn.Module):
         return X
 
 clf = CIFAR10Model()
+
+if args.from_checkpoint:
+    if args.from_checkpoint == "latest":
+        epoch = max([int(re.findall("[0-9]{1,2}", fp)[0]) for fp in os.listdir("/mnt/checkpoints/")])
+    else:
+        epoch = args.from_checkpoint
+    model.load_state_dict(torch.load(f"/mnt/checkpoints/epoch_{epoch}.pth"))
+
 clf.cuda()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.RMSprop(clf.parameters(), lr=0.0001, weight_decay=1e-6)
@@ -157,7 +174,8 @@ def train():
         test(epoch, NUM_EPOCHS)    
         if epoch % 5 == 0:
             torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{epoch}.pth")
-    torch.save(clf.state_dict(), f"/spell/checkpoints/model_final.pth")
+    
+    torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{NUM_EPOCHS + 1}.pth")
 
 if __name__ == "__main__":
     train()

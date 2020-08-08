@@ -12,12 +12,12 @@ if not os.path.exists("/spell/checkpoints/"):
 
 transform_train = torchvision.transforms.Compose([
     torchvision.transforms.RandomHorizontalFlip(),
-    # torchvision.transforms.ToTensor replacement; cf. https://i.imgur.com/R9JKaD2.png
-    torchvision.transforms.Lambda(lambda x: torch.tensor(np.array(x)))
-    # torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    # torchvision.transforms.Lambda(lambda x: torch.tensor(np.array(x).reshape((3, 32, 32)) / 255, dtype=torch.float)),
+    torchvision.transforms.ToTensor(),
+    torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
 ])
 train_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=True, transform=transform_train, download=True)
-train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=False)
 
 class CIFAR10Model(nn.Module):
     def __init__(self):
@@ -63,7 +63,7 @@ def train():
     for epoch in range(1, NUM_EPOCHS + 1):
         losses = []
 
-        for i, (X_batch, y_cls) in enumerate(train_dataset):
+        for i, (X_batch, y_cls) in enumerate(train_dataloader):
             optimizer.zero_grad()
 
             y = y_cls.cuda()
