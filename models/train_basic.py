@@ -10,13 +10,14 @@ import os
 if not os.path.exists("/spell/checkpoints/"):
     os.mkdir("/spell/checkpoints/")
 
-transform = torchvision.transforms.Compose([
+transform_train = torchvision.transforms.Compose([
     torchvision.transforms.RandomHorizontalFlip(),
-    torchvision.transforms.RandomPerspective(),
-    torchvision.transforms.ToTensor()
+    # torchvision.transforms.ToTensor replacement; cf. https://i.imgur.com/R9JKaD2.png
+    torchvision.transforms.Lambda(lambda x: torch.tensor(np.array(x)))
+    # torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
-dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=True, transform=transform, download=True)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+train_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=True, transform=transform_train, download=True)
+train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 class CIFAR10Model(nn.Module):
     def __init__(self):
@@ -62,7 +63,7 @@ def train():
     for epoch in range(1, NUM_EPOCHS + 1):
         losses = []
 
-        for i, (X_batch, y_cls) in enumerate(dataloader):
+        for i, (X_batch, y_cls) in enumerate(train_dataset):
             optimizer.zero_grad()
 
             y = y_cls.cuda()
@@ -84,7 +85,7 @@ def train():
 
         print(
             f'Finished epoch {epoch}. '
-            f'avg loss: {np.mean(losses)}; median loss: {np.min(losses)}'
+            f'avg loss: {np.mean(losses)}; median loss: {np.median(losses)}'
         )
         
         torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{epoch}.pth")
