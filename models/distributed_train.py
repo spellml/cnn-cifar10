@@ -130,7 +130,7 @@ else:
 clf.cuda()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.RMSprop(clf.parameters(), lr=0.0001 * hvd.size(), weight_decay=1e-6)
-optimizer = hvd.DistributedOptimizer(optimizer, named_parameters=model.named_parameters(), op=hvd.Average)
+optimizer = hvd.DistributedOptimizer(optimizer, named_parameters=clf.named_parameters(), op=hvd.Average)
 
 def test(epoch, num_epochs):
     losses = []
