@@ -17,35 +17,35 @@ writer = SummaryWriter('/spell/tensorboard/')
 
 import wandb
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--epochs', type=int, dest='epochs', default=50)
-# parser.add_argument('--batch_size', type=int, dest='batch_size', default=32)
+parser = argparse.ArgumentParser()
+parser.add_argument('--epochs', type=int, dest='epochs', default=50)
+parser.add_argument('--batch_size', type=int, dest='batch_size', default=32)
 
-# parser.add_argument('--conv1_filters', type=int, dest='conv1_filters', default=32)
-# parser.add_argument('--conv2_filters', type=int, dest='conv2_filters', default=64)
-# parser.add_argument('--dense_layer', type=int, dest='dense_layer', default=512)
+parser.add_argument('--conv1_filters', type=int, dest='conv1_filters', default=32)
+parser.add_argument('--conv2_filters', type=int, dest='conv2_filters', default=64)
+parser.add_argument('--dense_layer', type=int, dest='dense_layer', default=512)
 
-# parser.add_argument('--conv1_dropout', type=float, dest='conv1_dropout', default=0.25)
-# parser.add_argument('--conv2_dropout', type=float, dest='conv2_dropout', default=0.25)
-# parser.add_argument('--dense_dropout', type=float, dest='dense_dropout', default=0.5)
+parser.add_argument('--conv1_dropout', type=float, dest='conv1_dropout', default=0.25)
+parser.add_argument('--conv2_dropout', type=float, dest='conv2_dropout', default=0.25)
+parser.add_argument('--dense_dropout', type=float, dest='dense_dropout', default=0.5)
 
-# parser.add_argument('--from_checkpoint', type=str, dest='from_checkpoint', default="")
+parser.add_argument('--from_checkpoint', type=str, dest='from_checkpoint', default="")
 
-# args = parser.parse_args()
+args = parser.parse_args()
 
 # Used for testing purposes.
-class Args:
-    def __init__(self):
-        self.epochs = 50
-        self.batch_size = 32
-        self.conv1_filters = 32
-        self.conv2_filters = 64
-        self.dense_layer = 512
-        self.conv1_dropout = 0.25
-        self.conv2_dropout = 0.25
-        self.dense_dropout = 0.5
-        self.from_checkpoint = False
-args = Args()
+# class Args:
+#     def __init__(self):
+#         self.epochs = 50
+#         self.batch_size = 32
+#         self.conv1_filters = 32
+#         self.conv2_filters = 64
+#         self.dense_layer = 512
+#         self.conv1_dropout = 0.25
+#         self.conv2_dropout = 0.25
+#         self.dense_dropout = 0.5
+#         self.from_checkpoint = False
+# args = Args()
 
 transform_train = torchvision.transforms.Compose([
     torchvision.transforms.RandomHorizontalFlip(),
