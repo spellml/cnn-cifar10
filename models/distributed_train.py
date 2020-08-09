@@ -10,6 +10,7 @@ import argparse
 
 from spell.metrics import send_metric
 import horovod.torch as hvd
+hvd.init()
 
 import re
 import os
@@ -159,7 +160,6 @@ def test(epoch, num_epochs):
     )
 
 def train():
-    hvd.init()
     torch.cuda.set_device(hvd.local_rank())
     torch.set_num_threads(1)
     clf.train()
