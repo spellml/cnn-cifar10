@@ -1,0 +1,55 @@
+import torch
+from torch import nn
+from torch import optim
+
+# Inlining the model definition in the server code for simplicity. In a production setting, we
+# recommend creating a model module and importing that instead.
+class CIFAR10Model(nn.Module):
+    def __init__(
+        self,
+        conv1_filters=32, conv1_dropout=0.25,
+        conv2_filters=64, conv2_dropout=0.25,
+        dense_layer=512, dense_dropout=0.5
+    ):
+        super().__init__()
+        self.cnn_block_1 = nn.Sequential(*[
+            nn.Conv2d(3, self.conv1_filters, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(self.conv1_filters, self.conv2_filters, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Dropout(self.conv1_dropout)
+        ])
+        self.cnn_block_2 = nn.Sequential(*[
+            nn.Conv2d(self.conv2_filters, self.conv2_filters, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(self.conv2_filters, self.conv2_filters, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Dropout(self.conv2_dropout)
+        ])
+        self.flatten = lambda inp: torch.flatten(inp, 1)
+        self.head = nn.Sequential(*[
+            nn.Linear(self.conv2_filters * 8 * 8, self.dense_layer),
+            nn.ReLU(),
+            nn.Dropout(self.dense_dropout),
+            nn.Linear(self.dense_layer, 10)
+        ])
+    
+    def forward(self, X):
+        X = self.cnn_block_1(X)
+        X = self.cnn_block_2(X)
+        X = self.flatten(X)
+        X = self.head(X)
+        return X
+
+
+from spell.serving import BasePredictor
+class Predictor(BasePredictor):
+    def __init__(self):
+        self.clf = CIFAR10Model()
+        self.clf.load_state_dict(torch.load("/model/checkpoints/epoch_20.pth"))
+        self.clf.eval()
+
+    def predict(self, payload):
+        return "Hello World!"
