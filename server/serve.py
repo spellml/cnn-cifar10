@@ -13,27 +13,27 @@ class CIFAR10Model(nn.Module):
     ):
         super().__init__()
         self.cnn_block_1 = nn.Sequential(*[
-            nn.Conv2d(3, self.conv1_filters, 3, padding=1),
+            nn.Conv2d(3, conv1_filters, 3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(self.conv1_filters, self.conv2_filters, 3, padding=1),
+            nn.Conv2d(conv1_filters, conv2_filters, 3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
-            nn.Dropout(self.conv1_dropout)
+            nn.Dropout(conv1_dropout)
         ])
         self.cnn_block_2 = nn.Sequential(*[
-            nn.Conv2d(self.conv2_filters, self.conv2_filters, 3, padding=1),
+            nn.Conv2d(conv2_filters, conv2_filters, 3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(self.conv2_filters, self.conv2_filters, 3, padding=1),
+            nn.Conv2d(conv2_filters, conv2_filters, 3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
-            nn.Dropout(self.conv2_dropout)
+            nn.Dropout(conv2_dropout)
         ])
         self.flatten = lambda inp: torch.flatten(inp, 1)
         self.head = nn.Sequential(*[
-            nn.Linear(self.conv2_filters * 8 * 8, self.dense_layer),
+            nn.Linear(conv2_filters * 8 * 8, dense_layer),
             nn.ReLU(),
-            nn.Dropout(self.dense_dropout),
-            nn.Linear(self.dense_layer, 10)
+            nn.Dropout(dense_dropout),
+            nn.Linear(dense_layer, 10)
         ])
     
     def forward(self, X):
