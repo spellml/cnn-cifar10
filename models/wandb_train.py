@@ -11,14 +11,15 @@ from spell.metrics import send_metric
 
 import re
 import os
-if not os.path.exists("/spell/checkpoints/"):
-    os.mkdir("/spell/checkpoints/")
-writer = SummaryWriter('/spell/tensorboard/')
+CWD = os.environ["PWD"]
+if not os.path.exists(f"{CWD}/checkpoints/"):
+    os.mkdir(f"{CWD}/checkpoints/")
+writer = SummaryWriter(f"{CWD}/tensorboard/")
 
 import wandb
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, dest='epochs', default=50)
+parser.add_argument('--epochs', type=int, dest='epochs', default=20)
 parser.add_argument('--batch_size', type=int, dest='batch_size', default=32)
 
 parser.add_argument('--conv1_filters', type=int, dest='conv1_filters', default=32)
@@ -56,7 +57,7 @@ transform_train = torchvision.transforms.Compose([
 transform_test = torchvision.transforms.Compose([
     # torchvision.transforms.Lambda(lambda x: torch.tensor(np.array(x).reshape((3, 32, 32)) / 255, dtype=torch.float)),
     torchvision.transforms.ToTensor(),
-    torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),    
+    torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
 ])
 
 download = not os.path.exists("/mnt/cifar10/")
@@ -70,6 +71,7 @@ train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle
 # download=False because the train and test sets are downloaded simultaneously
 test_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=False, transform=transform_test, download=False)
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+
 
 class CIFAR10Model(nn.Module):
     def __init__(self):
@@ -97,13 +99,14 @@ class CIFAR10Model(nn.Module):
             nn.Dropout(args.dense_dropout),
             nn.Linear(args.dense_layer, 10)
         ])
-    
+
     def forward(self, X):
         X = self.cnn_block_1(X)
         X = self.cnn_block_2(X)
         X = self.flatten(X)
         X = self.head(X)
         return X
+
 
 clf = CIFAR10Model()
 
@@ -120,11 +123,13 @@ else:
 clf.cuda()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.RMSprop(clf.parameters(), lr=0.0001, weight_decay=1e-6)
+
+
 def test(epoch, num_epochs):
     losses = []
     n_right, n_total = 0, 0
     clf.eval()
-    
+
     for i, (X_batch, y_cls) in enumerate(test_dataloader):
         with torch.no_grad():
             y = y_cls.cuda()
@@ -135,10 +140,10 @@ def test(epoch, num_epochs):
             losses.append(loss.item())
             _, y_pred_cls = y_pred.max(1)
             n_right, n_total = n_right + (y_pred_cls == y_cls.cuda()).sum().item(), n_total + len(X_batch)
-    
+
     val_acc = n_right / n_total
     val_loss = np.mean(losses)
-    
+
     send_metric("val_loss", val_loss)
     send_metric("val_acc", val_acc)
     wandb.log({"val_loss": val_loss, "val_acc": val_acc})
@@ -147,14 +152,15 @@ def test(epoch, num_epochs):
         f'val acc: {val_acc:.3f}.'
     )
 
+
 def train():
     clf.train()
     NUM_EPOCHS = args.epochs
-    
+
     wandb.init()
     wandb.config.update(args)
     wandb.watch(clf)
-    
+
     for epoch in range(start_epoch, NUM_EPOCHS + 1):
         losses = []
 
@@ -182,11 +188,12 @@ def train():
             f'Finished epoch {epoch}. '
             f'avg loss: {np.mean(losses)}; median loss: {np.median(losses)}'
         )
-        test(epoch, NUM_EPOCHS)    
+        test(epoch, NUM_EPOCHS)
         if epoch % 5 == 0:
-            torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{epoch}.pth")
-    
-    torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{NUM_EPOCHS}.pth")
+            torch.save(clf.state_dict(), f"{CWD}/checkpoints/epoch_{epoch}.pth")
+
+    torch.save(clf.state_dict(), f"{CWD}/checkpoints/model_final.pth")
+
 
 if __name__ == "__main__":
     train()

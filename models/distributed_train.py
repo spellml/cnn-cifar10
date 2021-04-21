@@ -1,3 +1,6 @@
+import re
+import os
+
 import torchvision
 from torch.utils.data import DataLoader
 import torch
@@ -9,19 +12,19 @@ import numpy as np
 import argparse
 
 from spell.metrics import send_metric
+
 import horovod.torch as hvd
 hvd.init()
 
-import re
-import os
 if hvd.local_rank() == 0:
-    if not os.path.exists("/spell/checkpoints/"):
-        os.mkdir("/spell/checkpoints/")
+    CWD = os.environ["PWD"]
+    if not os.path.exists(f"{CWD}/checkpoints/"):
+        os.mkdir(f"{CWD}/checkpoints/")
 if hvd.rank() == 0:
-    writer = SummaryWriter('/spell/tensorboard/')
+    writer = SummaryWriter(f"{CWD}/tensorboard/")
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, dest='epochs', default=50)
+parser.add_argument('--epochs', type=int, dest='epochs', default=20)
 parser.add_argument('--batch_size', type=int, dest='batch_size', default=32)
 
 parser.add_argument('--conv1_filters', type=int, dest='conv1_filters', default=32)
@@ -80,6 +83,7 @@ test_dataset = torchvision.datasets.CIFAR10("/mnt/cifar10/", train=False, transf
 test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset, num_replicas=hvd.size(), rank=hvd.rank())
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size)
 
+
 class CIFAR10Model(nn.Module):
     def __init__(self):
         super().__init__()
@@ -106,13 +110,14 @@ class CIFAR10Model(nn.Module):
             nn.Dropout(args.dense_dropout),
             nn.Linear(args.dense_layer, 10)
         ])
-    
+
     def forward(self, X):
         X = self.cnn_block_1(X)
         X = self.cnn_block_2(X)
         X = self.flatten(X)
         X = self.head(X)
         return X
+
 
 clf = CIFAR10Model()
 
@@ -132,11 +137,12 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.RMSprop(clf.parameters(), lr=0.0001 * hvd.size(), weight_decay=1e-6)
 optimizer = hvd.DistributedOptimizer(optimizer, named_parameters=clf.named_parameters(), op=hvd.Average)
 
+
 def test(epoch, num_epochs):
     losses = []
     n_right, n_total = 0, 0
     clf.eval()
-    
+
     for i, (X_batch, y_cls) in enumerate(test_dataloader):
         with torch.no_grad():
             y = y_cls.cuda()
@@ -147,29 +153,30 @@ def test(epoch, num_epochs):
             losses.append(loss.item())
             _, y_pred_cls = y_pred.max(1)
             n_right, n_total = n_right + (y_pred_cls == y_cls.cuda()).sum().item(), n_total + len(X_batch)
-    
+
     val_acc = n_right / n_total
     val_loss = np.mean(losses)
     send_metric("val_loss", val_loss)
     send_metric("val_acc", val_acc)
     writer.add_scalar("val_loss", val_loss, (len(train_dataloader) // 200 + 1) * epoch + (i // 200))
-    writer.add_scalar("val_acc", val_acc, (len(train_dataloader) // 200 + 1) * epoch + (i // 200))    
+    writer.add_scalar("val_acc", val_acc, (len(train_dataloader) // 200 + 1) * epoch + (i // 200))
     print(
         f'Finished epoch {epoch}/{num_epochs} avg val loss: {val_loss:.3f}; median val loss: {np.median(losses):.3f}; '
         f'val acc: {val_acc:.3f}.'
     )
 
+
 def train():
     torch.cuda.set_device(hvd.local_rank())
     torch.set_num_threads(1)
     clf.train()
-    
+
     NUM_EPOCHS = args.epochs
 
     for epoch in range(start_epoch, NUM_EPOCHS + 1):
         train_sampler.set_epoch(epoch)
         test_sampler.set_epoch(epoch)
-        
+
         losses = []
 
         for i, (X_batch, y_cls) in enumerate(train_dataloader):
@@ -198,12 +205,13 @@ def train():
                 f'Finished epoch {epoch}. '
                 f'avg loss: {np.mean(losses)}; median loss: {np.median(losses)}'
             )
-            test(epoch, NUM_EPOCHS)    
+            test(epoch, NUM_EPOCHS)
             if epoch % 5 == 0:
                 torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{epoch}.pth")
 
     if hvd.rank() == 0:
         torch.save(clf.state_dict(), f"/spell/checkpoints/epoch_{NUM_EPOCHS}.pth")
+
 
 if __name__ == "__main__":
     train()
