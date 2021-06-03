@@ -11,3 +11,4 @@ A simple PyTorch CNN trained on the CIFAR-10 dataset. Comes in a few different f
 Refer to the `notebooks/` folder for implementation notes.
 
 See also [the Spell quickstart](https://spell.ml/docs/quickstart/).
+# cnn-cifar
