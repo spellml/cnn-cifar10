@@ -9,8 +9,11 @@ buf = BytesIO()
 img.save(buf, format="JPEG")
 img_str = base64.b64encode(buf.getvalue())
 
+# Remove line below after replacement
+raise Exception("PLEASE REPLACE THE FOLLOWING LINES WITH YOUR ORG NAME AND SERVER NAME")
+
 resp = requests.post(
-  "https://external-aws.spell.services/external-aws/cifar10-demo/predict",
+  "https://$ORG_NAME.spell.services/$ORG_NAME/$SERVER_NAME/predict",
   headers={"Content-Type": "application/json"},
   json={
     "image": img_str.decode("utf8"),
